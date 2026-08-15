@@ -1,3 +1,10 @@
+/**
+ * Assignement 1 - System Programming Course
+ * Yotam Weintraub 
+ * ID: 
+ */
+
+
 #include <stdio.h>   /* used for I/O and perror */
 #include <stdlib.h>  /* used for malloc & free */
 #include <fcntl.h>   /* contains the file control options(O_RDONLY,O_WRONLY,...) */
@@ -37,7 +44,7 @@ int verifyArgs(int argc, char* argv[]){
 
 int main(int argc, char* argv[]) {
     int srcFD , dstFD; /*file discriptors : integers representing open files*/
-    ssize_t bytesRead, bytesWritten;
+    ssize_t bytesRead, bytesWritten, totalWritten;
     int granularity_bytes;
     if((granularity_bytes = verifyArgs(argc,argv)) == -1)  exit(EXIT_FAILURE); /* parses through the line args sets gran value when passed correctly */
     
@@ -59,7 +66,7 @@ int main(int argc, char* argv[]) {
    }
 
    
-   /** Open the destination file, If exists truncates it. if not creates a new file
+   /** Open the destination file, If exists truncates it. if not creates a new file with owner can read/write, others can read permissions
     O_WRONLY: open for writing. = 0000 0001
     O_CREAT: create the file if doesnt exist = 0000 0100 
     O_TRUNC: if the file exists wipe its content (truncate to 0) = 0001 0000
@@ -80,6 +87,42 @@ int main(int argc, char* argv[]) {
    }
 
 
+   /**  read is a sysCall that requests from the krnl to cpy data from the file into the bufer.
+        The krnl puts the process to sleep until the disk/fileSystem dlivers the data.
+   */
+  while((bytesRead = read(srcFD, buff, granularity_bytes)) != 0 ) {
+    if(bytesRead == -1) {
+        if(errno == EINTR)  /* The read was interrupted by a signal, try again! */
+            continue;
+        else {
+            /* A real error occurred, print it and exit */
+            perror("Read failed");
+            FREE_BUFF(buff);
+            close(srcFD);
+            close(dstFD);
+            exit(EXIT_FAILURE);
+        }
+    }
+    totalWritten = 0;   /* This is a variable to track progress of written bytes for each chunk we need to write in the current granularity batch */
+    while(totalWritten < bytesRead) {
+        if((bytesWritten = write(dstFD , buff + totalWritten, bytesRead - totalWritten)) == -1) { /* sums up total written to 'bytesWriten' while checking for failure */
+            if(errno == EINTR) continue; /* a signal has interrupted the current chunk, nothing to report - continues */
+            else {
+                /* A real error occurred, print it and exit */
+                perror("Write failed");
+                close(srcFD);
+                close(dstFD);
+                FREE_BUFF(buff);
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            totalWritten += bytesWritten;
+        }
+    } 
+  }
+
+    close(srcFD);
+    close(dstFD);
     FREE_BUFF(buff);
     return EXIT_SUCCESS;
 }
