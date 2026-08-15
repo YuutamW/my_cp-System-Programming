@@ -34,28 +34,26 @@ int verifyArgs(int argc, char *argv[])
         fprintf(stderr, "Usage: '%s' <source-file> <destination-file> <granularity_bytes>\n", argv[0]);
         return -1;
     }
-    else if (argv && argv[3])
-    {
-        char *endPtr;
-        long val = strtol(argv[3], &endPtr, 10); /* convert The granularity arg from string to int in base 10 */
+    char *endPtr;
+    long val = strtol(argv[3], &endPtr, 10); /* convert The granularity arg from string to int in base 10 */
 
-        if (endPtr == argv[3])
-        { /* Check the validity of the passed granularity argument */
-            fprintf(stderr, "No digits found in <granularity_bytes>: '%s' Granularity argument must be an integer value\n", argv[3]);
-            return -1;
-        }
-        else /* If the argument was passed correctly, we check if the passed 'int' is positive-nonZero if not-return -1 */
-            return granParamValidation(val);
-    }
-    else
+    if (endPtr == argv[3])
+    { /* Check the validity of the passed granularity argument */
+        fprintf(stderr, "No digits found in <granularity_bytes>: '%s' Granularity argument must be an integer value\n", argv[3]);
         return -1;
+    }
+    else /* If the argument was passed correctly, we check if the passed 'int' is positive-nonZero if not-return -1 */
+        return granParamValidation(val);
+    
 }
 
 /**  calculate elapsed time procedure -
  * given the timespec mesurements by pointers to avoid unnecessary data copying,
+ * given the granularity value for printing and a flag to indicate whether measurements 
+ * were calculated for a successfull/unsuccessfull state
  * calculates the delta time and prints to terminal the result
  */
-void calcElapsedTime(struct timespec *start_time, struct timespec *end_time, int granVal)
+void calcElapsedTime(struct timespec *start_time, struct timespec *end_time, int granVal , int state_flag)
 {
     if (!start_time || !end_time)
         return;
@@ -72,13 +70,13 @@ void calcElapsedTime(struct timespec *start_time, struct timespec *end_time, int
 
     /* convert to total milliseconds and print */
     double total_milliseconds = (deltaTime_sec * 1000.0) + (deltaTime_nsec / MILLION);
-    fprintf(stdout, "I/O completed %s total time: %.3fms with granularity value (%d)\n", (errno < 0 ? "Unsuccessfully" : "Successfuly"), total_milliseconds, granVal);
+    fprintf(stdout, "I/O completed %s total time: %.3fms with granularity value (%d)\n", (state_flag < 0 ? "Unsuccessfully" : "Successfuly"), total_milliseconds, granVal);
     return;
 }
 
 int main(int argc, char *argv[])
 {
-    int srcFD, dstFD;                             /*file discriptors : integers representing open files*/
+    int srcFD, dstFD;   /* file discriptors : integers representing open files */
     ssize_t bytesRead, bytesWritten, currWritten; /* currWritten is a variable to track the current bytes written for the granularity batch  */
     int granularity_bytes;
     struct timespec start_time, end_time; /* start and end handles to track benchmarking */
@@ -103,7 +101,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    /** Open the destination file, If exists truncates it. if not creates a new file with owner can read/write, others can read permissions
+    /** Opens the destination file, If exists truncates it. if not creates a new file with owner can read/write, others can read permissions
      O_WRONLY: open for writing. = 0000 0001
      O_CREAT: create the file if doesnt exist = 0000 0100
      O_TRUNC: if the file exists wipe its content (truncate to 0) = 0001 0000
@@ -139,7 +137,7 @@ int main(int argc, char *argv[])
             {
                 /* A real error occurred, print it and exit */
                 MEASURE_TIME(end_time); /* Stop timer */
-                calcElapsedTime(&start_time, &end_time, granularity_bytes);
+                calcElapsedTime(&start_time, &end_time, granularity_bytes , -1);
                 perror("Read failed");
                 FREE_BUFF(buff);
                 close(srcFD);
@@ -158,7 +156,7 @@ int main(int argc, char *argv[])
                 {
                     /* A real error occurred, print it and exit */
                     MEASURE_TIME(end_time); /* Stop timer */
-                    calcElapsedTime(&start_time, &end_time, granularity_bytes);
+                    calcElapsedTime(&start_time, &end_time, granularity_bytes, -1);
                     perror("Write failed");
                     close(srcFD);
                     close(dstFD);
@@ -174,7 +172,7 @@ int main(int argc, char *argv[])
     }
 
     MEASURE_TIME(end_time); /* calculate 2nd measurement */
-    calcElapsedTime(&start_time, &end_time, granularity_bytes);
+    calcElapsedTime(&start_time, &end_time, granularity_bytes , 1);
     close(srcFD);
     close(dstFD);
     FREE_BUFF(buff);
