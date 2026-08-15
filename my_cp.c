@@ -10,6 +10,8 @@
 #include <unistd.h> /* Provides access to the POSIX operating system API, which includes the read(), write(), and close() system calls */
 #include <errno.h>  /* allows us to check the errno variable against EINTR to properly handle interrupt signals if a read or write operation fails. */
 #include <time.h>   /* internal timing measurements using clock_gettime() and the struct timespec data structure */
+#include <sys/wait.h> /* required for waitpid, used to automate diff check by forking this process */
+
 
 #define ALLOC_BUFF(gran_val) (char *)malloc(gran_val)
 #define FREE_BUFF(buff) free(buff)
@@ -72,6 +74,48 @@ void calcElapsedTime(struct timespec *start_time, struct timespec *end_time, int
     double total_milliseconds = (deltaTime_sec * 1000.0) + (deltaTime_nsec / MILLION);
     fprintf(stdout, "I/O completed %s total time: %.3fms with granularity value (%d)\n", (state_flag < 0 ? "Unsuccessfully" : "Successfuly"), total_milliseconds, granVal);
     return;
+}
+
+/** auto Check Procedure:
+ * Automates diff -s command by forking this process and waiting on the result
+ */
+int autoDiff(char* argv[]) {
+    fprintf(stdout,"\n--- Automating diff check (Fork/Exec) ---\n");
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return EXIT_FAILURE;
+    } else if (pid == 0) { /* CHILD PROCESS: This process will become 'diff' */
+        
+        char *diff_args[] = {"diff", "-s", argv[1], argv[2], NULL}; /* Create argument list for diff. Must be NULL-terminated. */
+
+        execvp("diff", diff_args);  /* execvp replaces the child process with the diff program */
+        /* If execvp fails, it returns and we hit this code */
+        perror("execvp failed");
+        return EXIT_FAILURE;
+    } else {
+        int status; /* Parent process: This is the original program */
+        waitpid(pid,&status,0); /* wait for the child process to finish */
+
+        /* Check if the process exited normally */
+        if(WIFEXITED(status)) { /* WIFEXITED(status): Returns true (non-zero) if the child process exited normally. */
+            int exitCode = WEXITSTATUS(status); /* WEXITSTATUS(status): Extracts the actual 8-bit exit code (e.g., 0, 1, or 2) from the packed integer. */
+            
+            
+            if (exitCode == 0) {   /* diff returns 0 on success, 1 if files differ, 2 on trouble */
+                printf("Diff check passed: Files are identical.\n");
+                return EXIT_SUCCESS;
+            } else {
+                printf("Diff check failed: Files are different or an error occurred (exit code %d).\n", exitCode);
+                return EXIT_FAILURE;
+            }
+        } else {
+            /* The process was killed or crashed */
+            printf("Diff process did not terminate normally.\n");
+            return EXIT_FAILURE;
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -176,5 +220,6 @@ int main(int argc, char *argv[])
     close(srcFD);
     close(dstFD);
     FREE_BUFF(buff);
-    return EXIT_SUCCESS;
+    int automatedTaskRes = autoDiff(argv); /* automate the diff -s command */
+    return automatedTaskRes;
 }
