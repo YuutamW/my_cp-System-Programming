@@ -42,6 +42,7 @@
 *.idb
 *.pdb
 *.txt
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd
@@ -57,3 +58,4 @@ dkms.conf
 simple_cp_syscall.c
 simple_cp.c
 testSysCall.c
+my_cp.exe
