@@ -41,7 +41,7 @@
 *.su
 *.idb
 *.pdb
-
+*.txt
 # Kernel Module Compile Results
 *.mod*
 *.cmd
@@ -53,3 +53,7 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+simple_cp_syscall.c
+simple_cp.c
+testSysCall.c
