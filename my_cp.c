@@ -79,7 +79,7 @@ void calcElapsedTime(struct timespec *start_time, struct timespec *end_time, int
 /** auto Check Procedure:
  * Automates diff -s command by forking this process and waiting on the result
  */
-int autoDiff(char* argv[]) {
+int autoDiff(const char* src, const char* dst) {
     fprintf(stdout,"\n--- Automating diff check (Fork/Exec) ---\n");
     pid_t pid = fork();
 
@@ -88,7 +88,7 @@ int autoDiff(char* argv[]) {
         return EXIT_FAILURE;
     } else if (pid == 0) { /* CHILD PROCESS: This process will become 'diff' */
         
-        char *diff_args[] = {"diff", "-s", argv[1], argv[2], NULL}; /* Create argument list for diff. Must be NULL-terminated. */
+        char *diff_args[] = {"diff", "-s", src, dst, NULL}; /* Create argument list for diff. Must be NULL-terminated. */
 
         execvp("diff", diff_args);  /* execvp replaces the child process with the diff program */
         /* If execvp fails, it returns and we hit this code */
@@ -220,6 +220,6 @@ int main(int argc, char *argv[])
     close(srcFD);
     close(dstFD);
     FREE_BUFF(buff);
-    int automatedTaskRes = autoDiff(argv); /* automate the diff -s command */
+    int automatedTaskRes = autoDiff(argv[1],argv[2]); /* automate the diff -s command */
     return automatedTaskRes;
 }
