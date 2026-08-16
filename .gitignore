@@ -60,4 +60,3 @@ simple_cp_syscall.c
 simple_cp.c
 testSysCall.c
 my_cp.exe
-!my_cp.c
