@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gcc -Wall -Wextra -std=gnu11 -O2 my_cp.c -o /tmp/claude-1000/-home-yotam-Programs-C-Programs-Ex1-my-cp-System-Programming/0c7c110b-ba9c-4ff4-b937-07b875511b55/scratchpad/my_cp_test)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(gcc --version)"
+    ]
+  }
+}
