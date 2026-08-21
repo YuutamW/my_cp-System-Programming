@@ -94,7 +94,7 @@ int autoDiff(const char* src, const char* dst) {
         /* If execvp fails, it returns and we hit this code */
         perror("execvp failed");
         return EXIT_FAILURE;
-    } else {
+    } else { 
         int status; /* Parent process: This is the original program */
         waitpid(pid,&status,0); /* wait for the child process to finish */
 

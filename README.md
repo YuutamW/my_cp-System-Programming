@@ -1,6 +1,6 @@
 # my_cp — Granularity-Based File Copy Using Raw System Calls
 
-**Assignment No. 1 — System Programming (course 3503820)**
+**Assignment No. 1 — System Programming**
 **Yotam Weintraub — ID: 321610859**
 Repository: <https://github.com/YuutamW/my_cp-System-Programming>
 
@@ -8,9 +8,9 @@ Repository: <https://github.com/YuutamW/my_cp-System-Programming>
 
 ## 1. Overview
 
-`my_cp` is a C implementation of a file-copy utility that works **directly against the
-Linux kernel** through system calls (`open`, `read`, `write`, `close`) instead of the
-buffered `stdio` library (`fopen`/`fread`/`fwrite`).
+`my_cp` is a C implementation of a file-copy utility that works directly against the
+Linux kernel through system calls instead of the
+buffered `stdio` library.
 
 The size of the block moved on every read/write round-trip — the **granularity** — is
 supplied by the user at run time. The program allocates its buffer dynamically to that
@@ -58,7 +58,7 @@ The `run` / `test` targets accept overrides:
 make run SRC_FILE=source.txt DST_FILE=destination.txt GRAN=4096
 ```
 
-Tested on Linux (kernel 6.x, `gcc` 15.2.0, x86-64).
+Tested on Linux (kernel 7, `gcc` 15.2.0, x86-64).
 
 ---
 
